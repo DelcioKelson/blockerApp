@@ -2,6 +2,8 @@ package com.example.blocker
 
 import android.accessibilityservice.AccessibilityServiceInfo
 import android.app.AppOpsManager
+import android.app.admin.DevicePolicyManager
+import android.app.admin.DeviceAdminReceiver
 import android.content.Context
 import android.content.Intent
 import android.os.Build
@@ -53,9 +55,27 @@ class MainActivity : AppCompatActivity() {
             setupClickListeners()
             refreshBlockedLists()
             updateButtonStates()
+            requestDeviceAdminIfNeeded()
         } catch (e: Exception) {
             Log.e(TAG, "Error in onCreate", e)
             Toast.makeText(this, "Error initializing app", Toast.LENGTH_LONG).show()
+        }
+    }
+
+    private fun requestDeviceAdminIfNeeded() {
+        try {
+            val dpm = getSystemService(Context.DEVICE_POLICY_SERVICE) as? DevicePolicyManager ?: return
+            val adminComponent = android.content.ComponentName(this, BlockerDeviceAdminReceiver::class.java)
+            val isAdmin = dpm.isAdminActive(adminComponent)
+            if (!isAdmin) {
+                val intent = Intent(DevicePolicyManager.ACTION_ADD_DEVICE_ADMIN).apply {
+                    putExtra(DevicePolicyManager.EXTRA_DEVICE_ADMIN, adminComponent)
+                    putExtra(DevicePolicyManager.EXTRA_ADD_EXPLANATION, "BlockerApp needs device admin to prevent easy uninstall.")
+                }
+                startActivity(intent)
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error requesting device admin", e)
         }
     }
 
