@@ -7,6 +7,8 @@ import android.content.Intent
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
+import android.net.Uri
+import android.os.PowerManager
 import android.util.Log
 import android.view.accessibility.AccessibilityManager
 import android.widget.ArrayAdapter
@@ -119,6 +121,22 @@ class MainActivity : AppCompatActivity() {
                     val intent = Intent(this, AppMonitorService::class.java)
                     ContextCompat.startForegroundService(this, intent)
                     Toast.makeText(this, "App monitor started", Toast.LENGTH_SHORT).show()
+
+                    // Prompt user to whitelist battery optimizations for better persistence
+                    try {
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                            val pm = getSystemService(Context.POWER_SERVICE) as? PowerManager
+                            val isWhitelisted = pm?.isIgnoringBatteryOptimizations(packageName) == true
+                            if (!isWhitelisted) {
+                                val whitelist = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
+                                    data = Uri.parse("package:$packageName")
+                                }
+                                startActivity(whitelist)
+                            }
+                        }
+                    } catch (e: Exception) {
+                        Log.w(TAG, "Unable to prompt battery optimization whitelist", e)
+                    }
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "Error starting service", e)

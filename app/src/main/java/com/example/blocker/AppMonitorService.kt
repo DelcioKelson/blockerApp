@@ -4,6 +4,7 @@ import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
+import android.app.AlarmManager
 import android.app.Service
 import android.app.usage.UsageEvents
 import android.app.usage.UsageStatsManager
@@ -105,6 +106,25 @@ class AppMonitorService : Service() {
         
         Log.d(TAG, "Service destroyed")
         super.onDestroy()
+    }
+
+    override fun onTaskRemoved(rootIntent: Intent?) {
+        super.onTaskRemoved(rootIntent)
+        try {
+            // Schedule a restart in 1s using AlarmManager to make stopping the service harder
+            val restartIntent = Intent(applicationContext, AppMonitorService::class.java)
+            val pending = PendingIntent.getService(
+                applicationContext,
+                1,
+                restartIntent,
+                PendingIntent.FLAG_ONE_SHOT or PendingIntent.FLAG_IMMUTABLE
+            )
+            val am = getSystemService(Context.ALARM_SERVICE) as? AlarmManager
+            am?.set(AlarmManager.RTC_WAKEUP, System.currentTimeMillis() + 1000L, pending)
+            Log.d(TAG, "Scheduled restart after task removal")
+        } catch (e: Exception) {
+            Log.e(TAG, "Error scheduling restart on task removed", e)
+        }
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
