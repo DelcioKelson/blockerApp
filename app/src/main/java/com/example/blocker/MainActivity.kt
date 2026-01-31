@@ -21,6 +21,8 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.appcompat.app.AlertDialog
+import java.security.SecureRandom
 
 class MainActivity : AppCompatActivity() {
 
@@ -44,6 +46,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var websiteAdapter: ArrayAdapter<String>
     private val blockedWebsites = mutableListOf<String>()
     private lateinit var accessibilityBtn: Button
+    private lateinit var disableBtn: Button
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -91,6 +94,7 @@ class MainActivity : AppCompatActivity() {
         addWebsiteBtn = findViewById(R.id.addWebsiteBtn)
         blockedWebsitesListView = findViewById(R.id.blockedWebsitesListView)
         accessibilityBtn = findViewById(R.id.accessibilityBtn)
+        disableBtn = findViewById(R.id.disableBtn)
     }
 
     private fun setupAdapters() {
@@ -209,6 +213,38 @@ class MainActivity : AppCompatActivity() {
                 Log.e(TAG, "Error opening accessibility settings", e)
             }
         }
+
+        disableBtn.setOnClickListener {
+            try {
+                // Generate a longer random token and require manual input to disable
+                val token = generateToken(16)
+                val input = EditText(this)
+                val dialog = AlertDialog.Builder(this)
+                    .setTitle("Confirm Disable")
+                    .setMessage("To disable monitoring, type the following token exactly:\n\n$token")
+                    .setView(input)
+                    .setPositiveButton("Disable") { d, _ ->
+                        val entered = input.text?.toString() ?: ""
+                        if (entered == token) {
+                            try {
+                                stopService(Intent(this, AppMonitorService::class.java))
+                                Toast.makeText(this, "Monitor disabled", Toast.LENGTH_SHORT).show()
+                            } catch (e: Exception) {
+                                Log.e(TAG, "Error disabling monitor", e)
+                                Toast.makeText(this, "Failed to disable monitor", Toast.LENGTH_SHORT).show()
+                            }
+                        } else {
+                            Toast.makeText(this, "Token mismatch — monitor remains enabled", Toast.LENGTH_SHORT).show()
+                        }
+                        d.dismiss()
+                    }
+                    .setNegativeButton("Cancel") { d, _ -> d.dismiss() }
+                    .create()
+                dialog.show()
+            } catch (e: Exception) {
+                Log.e(TAG, "Error in disable flow", e)
+            }
+        }
     }
 
     override fun onResume() {
@@ -303,5 +339,15 @@ class MainActivity : AppCompatActivity() {
             Log.e(TAG, "Error checking usage stats permission", e)
             false
         }
+    }
+
+    private fun generateToken(length: Int): String {
+        val alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789" // avoid ambiguous characters
+        val rnd = SecureRandom()
+        val sb = StringBuilder(length)
+        for (i in 0 until length) {
+            sb.append(alphabet[rnd.nextInt(alphabet.length)])
+        }
+        return sb.toString()
     }
 }
