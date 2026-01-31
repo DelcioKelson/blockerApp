@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">BlockerApp</string>
+    <string name="accessibility_service_description">BlockerApp needs accessibility access to monitor browser URLs and block websites you have added to your block list. This permission is only used to detect when you visit blocked websites.</string>
+</resources>

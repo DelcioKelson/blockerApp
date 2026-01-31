@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+<LinearLayout
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <TextView
+        android:id="@+id/statusText"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Blocker ready"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:layout_marginBottom="16dp" />
+
+    <!-- App Blocking Section -->
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="📱 BLOCK APPS"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        android:layout_marginBottom="8dp" />
+
+    <EditText
+        android:id="@+id/pkgInput"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Package name (e.g. com.facebook.katana)"
+        android:inputType="text"
+        android:layout_marginBottom="8dp" />
+
+    <Button
+        android:id="@+id/addBtn"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Add Blocked App"
+        android:layout_marginBottom="8dp" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Blocked Apps (long press to remove):"
+        android:textSize="12sp" />
+
+    <ListView
+        android:id="@+id/blockedListView"
+        android:layout_width="match_parent"
+        android:layout_height="120dp"
+        android:background="#f5f5f5"
+        android:layout_marginBottom="16dp" />
+
+    <!-- Website Blocking Section -->
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="🌐 BLOCK WEBSITES"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        android:layout_marginBottom="8dp" />
+
+    <EditText
+        android:id="@+id/websiteInput"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Website (e.g. facebook.com)"
+        android:inputType="textUri"
+        android:layout_marginBottom="8dp" />
+
+    <Button
+        android:id="@+id/addWebsiteBtn"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Add Blocked Website"
+        android:layout_marginBottom="8dp" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Blocked Websites (long press to remove):"
+        android:textSize="12sp" />
+
+    <ListView
+        android:id="@+id/blockedWebsitesListView"
+        android:layout_width="match_parent"
+        android:layout_height="120dp"
+        android:background="#f5f5f5"
+        android:layout_marginBottom="16dp" />
+
+    <!-- Permissions Section -->
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="⚙️ PERMISSIONS"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        android:layout_marginBottom="8dp" />
+
+    <Button
+        android:id="@+id/accessibilityBtn"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Enable Accessibility (for websites)"
+        android:layout_marginBottom="8dp" />
+
+    <!-- Controls -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginTop="8dp">
+
+        <Button
+            android:id="@+id/startBtn"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Start Monitor"
+            android:layout_marginEnd="8dp" />
+
+        <Button
+            android:id="@+id/stopBtn"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Stop Monitor" />
+
+    </LinearLayout>
+
+</LinearLayout>
+</ScrollView>

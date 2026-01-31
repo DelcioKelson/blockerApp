@@ -1,0 +1,50 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+    <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS" />
+
+    <application
+        android:allowBackup="true"
+        android:label="BlockerApp"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.BlockerApp">
+
+        <activity android:name="com.example.blocker.MainActivity"
+            android:exported="true"
+            android:theme="@style/Theme.BlockerApp">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <activity android:name="com.example.blocker.BlockedActivity"
+            android:exported="false"
+            android:taskAffinity="" />
+
+        <service android:name="com.example.blocker.AppMonitorService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="app_monitoring" />
+        </service>
+
+        <service android:name="com.example.blocker.BlockerVpnService"
+            android:permission="android.permission.BIND_VPN_SERVICE"
+            android:exported="true" />
+
+        <service android:name="com.example.blocker.WebsiteBlockerService"
+            android:exported="true"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.accessibilityservice"
+                android:resource="@xml/accessibility_service_config" />
+        </service>
+
+    </application>
+</manifest>
