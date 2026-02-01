@@ -46,7 +46,6 @@ class MainActivity : AppCompatActivity() {
     private lateinit var websiteAdapter: ArrayAdapter<String>
     private val blockedWebsites = mutableListOf<String>()
     private lateinit var accessibilityBtn: Button
-    private lateinit var disableBtn: Button
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -94,7 +93,6 @@ class MainActivity : AppCompatActivity() {
         addWebsiteBtn = findViewById(R.id.addWebsiteBtn)
         blockedWebsitesListView = findViewById(R.id.blockedWebsitesListView)
         accessibilityBtn = findViewById(R.id.accessibilityBtn)
-        disableBtn = findViewById(R.id.disableBtn)
     }
 
     private fun setupAdapters() {
@@ -106,14 +104,20 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setupClickListeners() {
-        // Long press to remove a blocked package
+        // Long press to remove a blocked package (only when monitor is stopped)
         blockedListView.setOnItemLongClickListener { _, _, position, _ ->
             try {
-                if (position < blockedPackages.size) {
+                if (AppMonitorService.isRunning) {
+                    Toast.makeText(this, "Stop monitoring to remove blocked apps", Toast.LENGTH_SHORT).show()
+                } else if (position < blockedPackages.size) {
                     val pkg = blockedPackages[position]
-                    BlockPreferences.removeBlockedPackage(this, pkg)
-                    refreshBlockedLists()
-                    Toast.makeText(this, "Removed $pkg", Toast.LENGTH_SHORT).show()
+                    val removed = BlockPreferences.removeBlockedPackage(this, pkg)
+                    if (removed) {
+                        refreshBlockedLists()
+                        Toast.makeText(this, "Removed $pkg", Toast.LENGTH_SHORT).show()
+                    } else {
+                        Toast.makeText(this, "Unable to remove $pkg", Toast.LENGTH_SHORT).show()
+                    }
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "Error removing package", e)
@@ -121,14 +125,20 @@ class MainActivity : AppCompatActivity() {
             true
         }
 
-        // Long press to remove a blocked website
+        // Long press to remove a blocked website (only when monitor is stopped)
         blockedWebsitesListView.setOnItemLongClickListener { _, _, position, _ ->
             try {
-                if (position < blockedWebsites.size) {
+                if (AppMonitorService.isRunning) {
+                    Toast.makeText(this, "Stop monitoring to remove blocked websites", Toast.LENGTH_SHORT).show()
+                } else if (position < blockedWebsites.size) {
                     val site = blockedWebsites[position]
-                    BlockPreferences.removeBlockedWebsite(this, site)
-                    refreshBlockedLists()
-                    Toast.makeText(this, "Removed $site", Toast.LENGTH_SHORT).show()
+                    val removed = BlockPreferences.removeBlockedWebsite(this, site)
+                    if (removed) {
+                        refreshBlockedLists()
+                        Toast.makeText(this, "Removed $site", Toast.LENGTH_SHORT).show()
+                    } else {
+                        Toast.makeText(this, "Unable to remove $site", Toast.LENGTH_SHORT).show()
+                    }
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "Error removing website", e)
@@ -144,6 +154,10 @@ class MainActivity : AppCompatActivity() {
                 } else {
                     val intent = Intent(this, AppMonitorService::class.java)
                     ContextCompat.startForegroundService(this, intent)
+                    // Optimistically mark running so UI updates immediately
+                    AppMonitorService.markRunning()
+                    updateButtonStates()
+                    updateStatus()
                     Toast.makeText(this, "App monitor started", Toast.LENGTH_SHORT).show()
 
                     // Prompt user to whitelist battery optimizations for better persistence
@@ -170,8 +184,43 @@ class MainActivity : AppCompatActivity() {
 
         stopBtn.setOnClickListener {
             try {
-                stopService(Intent(this, AppMonitorService::class.java))
-                Toast.makeText(this, "App monitor stopped", Toast.LENGTH_SHORT).show()
+                if (!AppMonitorService.isRunning) {
+                    Toast.makeText(this, "Monitor is not running", Toast.LENGTH_SHORT).show()
+                    return@setOnClickListener
+                }
+
+                // Protected stop: require token confirmation to prevent accidental stop
+                val token = generateToken(32)
+                val input = EditText(this)
+                input.isSingleLine = true
+                val dialog = AlertDialog.Builder(this)
+                    .setTitle("Confirm Stop Monitor")
+                    .setMessage("To stop monitoring, type the following token exactly:\n\n$token")
+                    .setView(input)
+                    .setPositiveButton("Stop") { d, _ ->
+                        val entered = input.text?.toString() ?: ""
+                        if (entered == token) {
+                            try {
+                                stopService(Intent(this, AppMonitorService::class.java))
+                                // Cancel any scheduled restart created in onTaskRemoved()
+                                AppMonitorService.cancelScheduledRestart(this)
+                                // Immediately reflect stopped state in UI
+                                AppMonitorService.markNotRunning()
+                                Toast.makeText(this, "App monitor stopped", Toast.LENGTH_SHORT).show()
+                                refreshBlockedLists()
+                                updateButtonStates()
+                            } catch (e: Exception) {
+                                Log.e(TAG, "Error stopping service", e)
+                                Toast.makeText(this, "Error stopping monitor", Toast.LENGTH_SHORT).show()
+                            }
+                        } else {
+                            Toast.makeText(this, "Token mismatch — monitor remains running", Toast.LENGTH_SHORT).show()
+                        }
+                        d.dismiss()
+                    }
+                    .setNegativeButton("Cancel") { d, _ -> d.dismiss() }
+                    .create()
+                dialog.show()
             } catch (e: Exception) {
                 Log.e(TAG, "Error stopping service", e)
             }
@@ -214,37 +263,7 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        disableBtn.setOnClickListener {
-            try {
-                // Generate a longer random token and require manual input to disable
-                val token = generateToken(20)
-                val input = EditText(this)
-                val dialog = AlertDialog.Builder(this)
-                    .setTitle("Confirm Disable")
-                    .setMessage("To disable monitoring, type the following token exactly:\n\n$token")
-                    .setView(input)
-                    .setPositiveButton("Disable") { d, _ ->
-                        val entered = input.text?.toString() ?: ""
-                        if (entered == token) {
-                            try {
-                                stopService(Intent(this, AppMonitorService::class.java))
-                                Toast.makeText(this, "Monitor disabled", Toast.LENGTH_SHORT).show()
-                            } catch (e: Exception) {
-                                Log.e(TAG, "Error disabling monitor", e)
-                                Toast.makeText(this, "Failed to disable monitor", Toast.LENGTH_SHORT).show()
-                            }
-                        } else {
-                            Toast.makeText(this, "Token mismatch — monitor remains enabled", Toast.LENGTH_SHORT).show()
-                        }
-                        d.dismiss()
-                    }
-                    .setNegativeButton("Cancel") { d, _ -> d.dismiss() }
-                    .create()
-                dialog.show()
-            } catch (e: Exception) {
-                Log.e(TAG, "Error in disable flow", e)
-            }
-        }
+        // 'Disable' flow removed. Use Stop Monitor to stop the service.
     }
 
     override fun onResume() {

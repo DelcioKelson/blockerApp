@@ -34,6 +34,44 @@ class AppMonitorService : Service() {
         @Volatile
         var isRunning = false
             private set
+
+        /**
+         * Mark service as not running from outside (UI requested stop).
+         * Use sparingly — this helps the UI reflect state immediately after stopService()
+         */
+        fun markNotRunning() {
+            isRunning = false
+        }
+
+        /**
+         * Mark service as running from outside (UI requested start).
+         * This lets the UI reflect the running state immediately while the
+         * system starts the service in the background.
+         */
+        fun markRunning() {
+            isRunning = true
+        }
+
+        /**
+         * Cancel any scheduled restart Alarm set in onTaskRemoved().
+         */
+        fun cancelScheduledRestart(ctx: Context) {
+            try {
+                val am = ctx.getSystemService(Context.ALARM_SERVICE) as? AlarmManager
+                val restartIntent = Intent(ctx, AppMonitorService::class.java)
+                val pending = PendingIntent.getService(
+                    ctx,
+                    1,
+                    restartIntent,
+                    PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE
+                )
+                if (pending != null) {
+                    am?.cancel(pending)
+                }
+            } catch (e: Exception) {
+                Log.w(TAG, "Error cancelling scheduled restart", e)
+            }
+        }
     }
 
     private var handlerThread: HandlerThread? = null
