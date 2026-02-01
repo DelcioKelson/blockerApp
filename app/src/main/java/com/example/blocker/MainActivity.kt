@@ -217,7 +217,7 @@ class MainActivity : AppCompatActivity() {
         disableBtn.setOnClickListener {
             try {
                 // Generate a longer random token and require manual input to disable
-                val token = generateToken(16)
+                val token = generateToken(20)
                 val input = EditText(this)
                 val dialog = AlertDialog.Builder(this)
                     .setTitle("Confirm Disable")
