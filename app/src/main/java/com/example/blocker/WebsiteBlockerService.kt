@@ -51,7 +51,7 @@ class WebsiteBlockerService : AccessibilityService() {
                 feedbackType = AccessibilityServiceInfo.FEEDBACK_GENERIC
                 flags = AccessibilityServiceInfo.FLAG_REPORT_VIEW_IDS or
                        AccessibilityServiceInfo.FLAG_RETRIEVE_INTERACTIVE_WINDOWS
-                notificationTimeout = 200
+                notificationTimeout = 300
                 packageNames = BROWSER_PACKAGES.toTypedArray()
             }
             serviceInfo = info
@@ -71,13 +71,17 @@ class WebsiteBlockerService : AccessibilityService() {
         try {
             val packageName = event.packageName?.toString() ?: return
             if (packageName !in BROWSER_PACKAGES) return
-            
+
             val rootNode = rootInActiveWindow ?: return
-            
+
             try {
+                // Find the URL bar and check if user is still typing
+                // If the URL bar is focused, user is typing/seeing suggestions — skip
+                if (isUrlBarFocused(rootNode, packageName)) return
+
                 val url = extractUrlFromBrowser(rootNode, packageName)
                 if (!url.isNullOrEmpty()) {
-                    checkAndBlockUrl(url)
+                    checkAndBlockUrl(url, rootNode, packageName)
                 }
             } finally {
                 safeRecycle(rootNode)
@@ -87,6 +91,35 @@ class WebsiteBlockerService : AccessibilityService() {
         } finally {
             isProcessing.set(false)
         }
+    }
+
+    /**
+     * Returns true if the URL bar is currently focused (user is typing/editing).
+     * When the URL bar is NOT focused, the displayed URL is the actual loaded page.
+     */
+    private fun isUrlBarFocused(rootNode: AccessibilityNodeInfo, packageName: String): Boolean {
+        val urlBarIds = listOf(
+            "$packageName:id/url_bar",
+            "$packageName:id/url_field",
+            "$packageName:id/search_box_text",
+            "$packageName:id/url",
+            "$packageName:id/address_bar_edit_text",
+            "$packageName:id/mozac_browser_toolbar_url_view",
+            "$packageName:id/omnibox_text",
+            "com.android.chrome:id/url_bar",
+            "com.android.chrome:id/search_box_text"
+        )
+        for (id in urlBarIds) {
+            try {
+                val nodes = rootNode.findAccessibilityNodeInfosByViewId(id)
+                if (!nodes.isNullOrEmpty()) {
+                    val focused = nodes[0].isFocused
+                    nodes.forEach { safeRecycle(it) }
+                    if (focused) return true
+                }
+            } catch (_: Exception) {}
+        }
+        return false
     }
 
     private fun extractUrlFromBrowser(rootNode: AccessibilityNodeInfo, packageName: String): String? {
@@ -152,7 +185,7 @@ class WebsiteBlockerService : AccessibilityService() {
                 text.contains("www.") || text.startsWith("http"))
     }
 
-    private fun checkAndBlockUrl(url: String) {
+    private fun checkAndBlockUrl(url: String, rootNode: AccessibilityNodeInfo, packageName: String) {
         val blockedSites = try {
             BlockPreferences.getBlockedWebsites(this)
         } catch (e: Exception) {
@@ -178,10 +211,50 @@ class WebsiteBlockerService : AccessibilityService() {
                     if (lastBlockedTime.compareAndSet(lastBlocked, now)) {
                         lastBlockedUrl = blocked
                         Log.i(TAG, "BLOCKING website: $url (matched: $blocked)")
+                        // 1. Clear the URL bar so the blocked URL is wiped
+                        clearUrlBar(rootNode, packageName)
+                        // 2. Show the blocked screen
                         launchBlockedActivity(blocked)
                     }
                 }
                 return
+            }
+        }
+    }
+
+    /**
+     * Finds the URL/address bar node and clears its text so the blocked URL
+     * is not visible when the user returns to the browser.
+     */
+    private fun clearUrlBar(rootNode: AccessibilityNodeInfo, packageName: String) {
+        val urlBarIds = listOf(
+            "$packageName:id/url_bar",
+            "$packageName:id/url_field",
+            "$packageName:id/search_box_text",
+            "$packageName:id/url",
+            "$packageName:id/address_bar_edit_text",
+            "$packageName:id/mozac_browser_toolbar_url_view",
+            "$packageName:id/omnibox_text",
+            "com.android.chrome:id/url_bar",
+            "com.android.chrome:id/search_box_text"
+        )
+        for (id in urlBarIds) {
+            try {
+                val nodes = rootNode.findAccessibilityNodeInfosByViewId(id)
+                if (!nodes.isNullOrEmpty()) {
+                    val node = nodes[0]
+                    // Focus the node then clear its text
+                    node.performAction(AccessibilityNodeInfo.ACTION_FOCUS)
+                    node.performAction(AccessibilityNodeInfo.ACTION_SET_TEXT,
+                        android.os.Bundle().apply {
+                            putCharSequence(AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE, "")
+                        })
+                    nodes.forEach { safeRecycle(it) }
+                    Log.d(TAG, "Cleared URL bar: $id")
+                    return
+                }
+            } catch (e: Exception) {
+                // Try next ID
             }
         }
     }
