@@ -1,4 +1,4 @@
-package com.example.blocker
+package com.tocota.blocker
 
 import android.accessibilityservice.AccessibilityServiceInfo
 import android.app.AppOpsManager

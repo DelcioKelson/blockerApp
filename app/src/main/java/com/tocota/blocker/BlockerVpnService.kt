@@ -1,4 +1,4 @@
-package com.example.blocker
+package com.tocota.blocker
 
 import android.app.Service
 import android.content.Intent

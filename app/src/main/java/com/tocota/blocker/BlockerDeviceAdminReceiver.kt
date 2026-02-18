@@ -1,4 +1,4 @@
-package com.example.blocker
+package com.tocota.blocker
 
 import android.app.admin.DeviceAdminReceiver
 import android.content.Context

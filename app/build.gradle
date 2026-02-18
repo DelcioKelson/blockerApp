@@ -1,10 +1,10 @@
 apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 android {
-    namespace 'com.example.blocker'
+    namespace 'com.tocota.blocker'
     compileSdk 34
     defaultConfig {
-        applicationId "com.example.blocker"
+        applicationId "com.tocota.blocker"
         minSdk 23
         targetSdk 34
         versionCode 1

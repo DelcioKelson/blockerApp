@@ -12,7 +12,7 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.BlockerApp">
         <receiver
-            android:name="com.example.blocker.BlockerDeviceAdminReceiver"
+            android:name="com.tocota.blocker.BlockerDeviceAdminReceiver"
             android:permission="android.permission.BIND_DEVICE_ADMIN"
             android:exported="true">
             <meta-data
@@ -23,7 +23,7 @@
             </intent-filter>
         </receiver>
 
-        <activity android:name="com.example.blocker.MainActivity"
+        <activity android:name="com.tocota.blocker.MainActivity"
             android:exported="true"
             android:theme="@style/Theme.BlockerApp">
             <intent-filter>
@@ -32,11 +32,11 @@
             </intent-filter>
         </activity>
 
-        <activity android:name="com.example.blocker.BlockedActivity"
+        <activity android:name="com.tocota.blocker.BlockedActivity"
             android:exported="false"
             android:taskAffinity="" />
 
-        <service android:name="com.example.blocker.AppMonitorService"
+        <service android:name="com.tocota.blocker.AppMonitorService"
             android:exported="false"
             android:foregroundServiceType="specialUse">
             <property
@@ -44,11 +44,11 @@
                 android:value="app_monitoring" />
         </service>
 
-        <service android:name="com.example.blocker.BlockerVpnService"
+        <service android:name="com.tocota.blocker.BlockerVpnService"
             android:permission="android.permission.BIND_VPN_SERVICE"
             android:exported="true" />
 
-        <service android:name="com.example.blocker.WebsiteBlockerService"
+        <service android:name="com.tocota.blocker.WebsiteBlockerService"
             android:exported="true"
             android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
             <intent-filter>
@@ -59,7 +59,7 @@
                 android:resource="@xml/accessibility_service_config" />
         </service>
 
-        <receiver android:name="com.example.blocker.RestartReceiver"
+        <receiver android:name="com.tocota.blocker.RestartReceiver"
                   android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
